@@ -1,0 +1,76 @@
+version: '3'
+
+volumes:
+  backend:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./backend/app
+      o: bind
+  frontend:
+    driver: local
+    driver_opts:
+      type: none
+      device: ./frontend/front
+      o: bind
+
+networks:
+  network:
+    driver: bridge
+
+services:
+  nginx:
+    container_name: nginx
+    build: ./nginx
+    ports:
+      - 443:443
+    restart: always
+    networks:
+      - network
+
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend/app:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - network
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./frontend/front:/usr/src/app
+    ports:
+     - 423:423
+    restart: always
+    env_file:
+      - .env
+    networks:
+      - network
+
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_HOST=${PGHOST}
+      - POSTGRES_PORT=${PGPORT}
+      - POSTGRES_DB=${PGDATABASE}
+      - POSTGRES_USER=${PGUSER}
+      - POSTGRES_PASSWORD=${PGPASSWORD}
+    ports:
+      - 5432:5432
+    networks:
+      - network
